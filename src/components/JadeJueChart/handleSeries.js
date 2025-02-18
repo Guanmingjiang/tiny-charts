@@ -71,14 +71,6 @@ function createSeries(iChartOption, baseOpt, sum, legendData) {
       name: legendData[i],
     });
   }
-  // series的非头尾数据的圆角取消及z值最高
-  baseOpt.series.forEach((series, index) => {
-    series.sum = sum;
-    series.itemStyle = {
-      borderColor: chartToken.itemBorderColor,
-      borderWidth: chartToken.itemBorderWidth,
-    };
-  });
   if (showBackground) {
     const placeHolderData = [];
     data.forEach((_, index) => {
@@ -99,6 +91,13 @@ function createSeries(iChartOption, baseOpt, sum, legendData) {
       silent: true,
     });
   }
+  baseOpt.series.forEach((series, index) => {
+    series.sum = sum;
+    series.itemStyle = {
+      borderColor: chartToken.itemBorderColor,
+      borderWidth: chartToken.itemBorderWidth,
+    };
+  });
 }
 
 const setRadiusAxis = (baseOpt, data, chartType, iChartOption) => {
@@ -162,7 +161,8 @@ export function setSeriesData(iChartOption, baseOpt, chartType) {
         roundCap: false,
         name: dataItem.name,
         beforeChangeValue: undefined,
-        showBackground: index === 0 ? showBackground : undefined
+        showBackground,
+        backgroundStyle: { color: chartToken.itemColor }
       });
     });
   } else if (chartType === CHARTTYPE.BASE) {

@@ -13,6 +13,7 @@ import cloneDeep from '../../util/cloneDeep';
 import { getColor } from '../../util/color';
 import defendXSS from '../../util/defendXSS';
 import { borderRadiusText, CHARTTYPE } from './BaseOption';
+import chartToken from './chartToken';
 
 const cloudThemeBarWidth = {
   large: 8,
@@ -79,7 +80,7 @@ function getOuterRing(baseOpt, chartInstance) {
 }
 
 // 配置玉玦图默认线宽为8
-export function setbarWidth(iChartOption, baseOpt, chartInstance) {
+export function setbarWidth(iChartOption, baseOpt, chartInstance, chartType) {
   const { barWidth, theme, data, position } = iChartOption;
   // 有配置主题时，根据规范设置线宽 与 线间距
   let themeBarWidth;
@@ -93,6 +94,9 @@ export function setbarWidth(iChartOption, baseOpt, chartInstance) {
   }
   baseOpt.series.forEach(series => {
     series.barWidth = barWidth ? barWidth : themeBarWidth || 8;
+    if (chartType === CHARTTYPE.STACK) {
+      series.barWidth += chartToken.itemBorderWidth;
+    }
     series.data.forEach(dataItem => {
       if (dataItem?.itemStyle?.borderRadius) {
         dataItem.itemStyle.borderRadius = dataItem.itemStyle.borderRadius.map(item => {
