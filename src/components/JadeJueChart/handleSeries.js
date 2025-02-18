@@ -81,7 +81,7 @@ function createSeries(iChartOption, baseOpt, sum, legendData) {
       placeHolderData.push({
         type: 'stack背景占位',
         value: baseOpt.angleAxis.sum - typeSum,
-        itemStyle: { color: chartToken.itemColor, borderRadius: [borderRadiusText, borderRadiusText, borderRadiusText, borderRadiusText] },
+        itemStyle: { color: chartToken.itemColor },
         sum: 0
       });
     });
@@ -89,6 +89,8 @@ function createSeries(iChartOption, baseOpt, sum, legendData) {
       ...defaultSeries,
       data: placeHolderData,
       silent: true,
+      roundCap: true,
+      z: 1
     });
   }
   baseOpt.series.forEach((series, index) => {
