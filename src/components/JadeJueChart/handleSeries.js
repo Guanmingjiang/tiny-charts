@@ -119,7 +119,7 @@ const setRadiusAxis = (baseOpt, data, chartType, iChartOption) => {
         value += val.data[index]?.value ?? 0;
       });
     } else {
-      value = baseOpt.series[index].data[index].beforeChangeValue ?? baseOpt.series[index].data[index].value;
+      value = baseOpt.series[index].data[index].beforeChangeValue ?? baseOpt.series[index].data[index].value ?? 0;
     }
     ratio = value / baseOpt.angleAxis.sum;
     return ratio;
@@ -196,7 +196,7 @@ export function setSeriesData(iChartOption, baseOpt, chartType) {
           itemStyle: {
             color: chartToken.itemColor,
           },
-          value: baseOpt.angleAxis.sum - dataItem.value,
+          value: baseOpt.angleAxis.sum - (dataItem.value ?? 0),
           sum: 0,
         });
       });
