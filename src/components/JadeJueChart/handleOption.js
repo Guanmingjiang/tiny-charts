@@ -187,7 +187,7 @@ export function setTooltip(formatter, baseOpt, chartType) {
  * @param {*} baseOpt
  */
 export function handleMinRatio(iChartOption, baseOpt, chartType) {
-  const { barMinRatio, data, tipHtml } = iChartOption;
+  const { barMinRatio, data, tipHtml, showBackground = true } = iChartOption;
   if (barMinRatio) {
     const minValue = (barMinRatio * baseOpt.angleAxis.sum) / 100;
     if (chartType === CHARTTYPE.PROCESS) {
@@ -209,9 +209,11 @@ export function handleMinRatio(iChartOption, baseOpt, chartType) {
           }
         });
       });
-      data.forEach((item, index) => {
-        baseOpt.series[baseOpt.series.length - 1].data[index].value = baseOpt.angleAxis.sum - item.value;
-      });
+      if (showBackground) {
+        data.forEach((item, index) => {
+          baseOpt.series[baseOpt.series.length - 1].data[index].value = baseOpt.angleAxis.sum - item.value;
+        });
+      }
     }
     // 配置了barMinRatio会修改data中的value值，需要重新设置tooltip进行覆盖
     baseOpt.tooltip = setTooltip(tipHtml, baseOpt, chartType);
