@@ -12,6 +12,7 @@
 import chartToken from './chartToken';
 import getTooltipContentHtmlStr from '../../option/config/tooltip/formatter'
 import { isNumber } from '../../util/type';
+import mobile from '../../util/mobile';
 
 /**
  * 给堆叠图的柱子中间加上空白缝隙, 处理柱子圆角的递进关系
@@ -56,7 +57,7 @@ function setAbsoluteYaxisLabel(baseOption) {
   });
 }
 
-function setTipFormatter(params, hideEmpty) {
+function setTipFormatter(params, hideEmpty, tooltip, iChartOption) {
   const config = {
     title: '',
     children: [],
@@ -74,7 +75,10 @@ function setTipFormatter(params, hideEmpty) {
     }
     config.children.push(dataItem)
   });
-  return getTooltipContentHtmlStr(config);
+  const isMobile = iChartOption.isMobile || mobile();
+  const isCloud = iChartOption.theme?.includes('cloud');
+  config.isMobile = iChartOption.adaptive && isCloud && isMobile;
+  return getTooltipContentHtmlStr(config, tooltip);
 }
 
 /**
@@ -87,7 +91,7 @@ export function setDoubleSides(baseOption, iChartOption) {
     setAbsoluteYaxisLabel(baseOption)
     if (!baseOption.tooltip.formatter) {
       baseOption.tooltip.formatter = (echartsParams, ticket, callback)=>{
-        setTipFormatter(echartsParams, baseOption.tooltip?.hideEmpty)
+        setTipFormatter(echartsParams, baseOption.tooltip?.hideEmpty, baseOption.tooltip, iChartOption)
       } 
     }
   }

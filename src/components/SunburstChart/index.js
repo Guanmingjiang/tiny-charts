@@ -14,6 +14,7 @@ import { setSeries } from './handleSeries';
 import merge from '../../util/merge';
 import PolarCoordSys from '../../option/PolarSys';
 import { CHART_TYPE } from '../../util/constants';
+import { mergeSeries } from '../../util/merge';
 
 export default class SunburstChart {
 
@@ -33,7 +34,7 @@ export default class SunburstChart {
         this.baseOption.color = ['', ...iChartOption.color];
         this.baseOption.series = setSeries(iChartOption);
         // 合并用户自定义series
-        merge(this.baseOption.series, iChartOption.series);
+        merge(this.baseOption.series, iChartOption.series);   
     }
     getOption() {
         return this.baseOption;

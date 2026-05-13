@@ -11,7 +11,7 @@
  */
 import init from '../../option/init';
 import mini from '../../feature/mini/miniLineChart';
-import { setSeries } from './handleSeries';
+import { setSeries, setDatasetSeries } from './handleSeries';
 import cloneDeep from '../../util/cloneDeep';
 import BaseOption from '../../option/base';
 import { setVisualMap } from './handleVisualMap';
@@ -21,9 +21,12 @@ import { getDatasetData } from '../../util/dataset';
 import { mergeVisualMap, mergeSeries } from '../../util/merge';
 import { handleData, onlyOnePoint, discrete, setTooltip } from './handleOptipn';
 import RectCoordSys, { xkey, xdata, ldata, ydata } from '../../option/RectSys';
+import AdaptiveRectSys from '../../option/RectSys/adaptive'
 import { lttb } from '../../feature/performance/lttb';
+import { handleMarkLineMax } from '../../option/config/mark';
 import { CHART_TYPE } from '../../util/constants';
-import { isArray } from '../../util/type';
+import { isArray, isObject } from '../../util/type';
+import legend from '../../option/config/legend';
 
 class LineChart {
 
@@ -33,6 +36,7 @@ class LineChart {
     this.baseOption = {};
     this.baseOption = cloneDeep(BaseOption);
     this.iChartOption = {};
+    this.chartInstance = chartInstance;
     getDatasetData(iChartOption);
     // 组装 iChartOption, 补全默认值
     this.iChartOption = init(iChartOption);
@@ -43,7 +47,7 @@ class LineChart {
   updateOption(chartInstance) {
     const iChartOption = this.iChartOption;
     // 装载除series之外的其他配置
-    RectCoordSys(this.baseOption, this.iChartOption, CHART_TYPE.LINE);
+    RectCoordSys(this.baseOption, this.iChartOption, CHART_TYPE.LINE, chartInstance);
     // x轴key值
     const xAxisKey = xkey(iChartOption);
     const data = iChartOption.massive ? lttb(iChartOption.data) : iChartOption.data
@@ -75,7 +79,7 @@ class LineChart {
       colors: iChartOption.color
     });
     // 设置VisualMap，通过数值映射颜色
-    this.baseOption.visualMap = setVisualMap(legendData, seriesData, iChartOption, this.baseOption);
+    this.baseOption.visualMap = setVisualMap(legendData, seriesData, iChartOption, this.baseOption, this);
     // 针对预测值图表需求，图表需要进行特殊处理
     handlePredict(this.baseOption, iChartOption);
     // 是否关闭hover态的效果，默认为false
@@ -86,9 +90,13 @@ class LineChart {
     onlyOnePoint(this.baseOption);
     // 针对离散数据, 创建同名Series, 显示离散数据的单个点
     discrete(iChartOption, this.baseOption);
-    setTooltip(this.baseOption, iChartOption,legendData)
+    setTooltip(this.baseOption, iChartOption,legendData, this)
     // 合并用户自定义series
-    mergeSeries(iChartOption, this.baseOption);
+    if (iChartOption.dataset) {
+      setDatasetSeries(this.baseOption, iChartOption);
+    } else {
+      mergeSeries(iChartOption, this.baseOption);
+    }
     // 合并用户自定义visualMap
     mergeVisualMap(iChartOption, this.baseOption);
     // 处理特性
@@ -97,17 +105,53 @@ class LineChart {
 
   // 根据渲染出的结果，二次计算option
   updateOptionAgain(echartsIns) {
-    const YAxiMax = this.getYAxisMaxValue(echartsIns, 0);
-    const YAxiMin = this.getYAxisMinValue(echartsIns, 0);
-    if(isArray(this.iChartOption.markLine)){
-
-    }else{
-      // 面积图上部红色阈值区域需要在二次计算中实现 -- 在原有Series上添加areaStyle
-      topArea(this.baseOption, this.iChartOption, YAxiMin);
-      // 面积图下部红色阈值区域需要在二次计算中实现 -- 植入假的同名Series
-      bottomArea(this.baseOption, this.iChartOption, YAxiMax);
+    const markLine = this.iChartOption.markLine;
+    if (isArray(markLine)) {
+      let top;
+      let bottom;
+      if (markLine.length > 1) {
+        markLine.forEach(item => {
+          item.newValue = item.yAxis || item.xAxis || item.value;
+          if (!top && !bottom) {
+            top = item;
+            bottom = item;
+          } else if (top.newValue < item.newValue) { 
+            top = item;
+          } else if (bottom.newValue > item.newValue) { 
+            bottom = item;
+          }
+        })
+      } else {
+        top = markLine[0] || {};
+        top.newValue = top?.yAxis || top?.xAxis || top?.value;
+      }
+      let topColor = top?.lineStyle?.color;
+      let bottomColor = bottom?.lineStyle?.color;
+      topColor = topColor && (topColor.includes('rgb') || topColor.includes('#')) ? topColor : undefined;
+      bottomColor = bottomColor && (bottomColor.includes('rgb') || bottomColor.includes('#')) ? bottomColor : undefined;
+      this.transformMarkLine = {
+        top: top?.newValue,
+        topColor: topColor,
+        topPosition: top?.label?.position,
+        topLabel: top?.label?.formatter,
+        topUse: top?.belong,
+        bottom: bottom?.newValue,
+        bottomColor: bottomColor,
+        bottomPosition: bottom?.label?.position,
+        bottomLabel: bottom?.label?.formatter,
+        bottomUse: bottom?.belong
+      }
     }
-    
+    // 处理用户设置的阈值大于y轴，设置y轴max保证阈值显示
+    if(this.iChartOption.markLine){
+      handleMarkLineMax(this.baseOption, echartsIns, this.iChartOption);
+    }
+    // 面积图上部红色阈值区域需要在二次计算中实现 -- 在原有Series上添加areaStyle
+    topArea(this.baseOption, this.iChartOption, echartsIns, this);
+    // 面积图下部红色阈值区域需要在二次计算中实现 -- 植入假的同名Series
+    bottomArea(this.baseOption, this.iChartOption, echartsIns, this);    
+    // 坐标轴二次计算
+    AdaptiveRectSys(this.baseOption, this.iChartOption, echartsIns, this)
     // 合并用户自定义series
     mergeSeries(this.iChartOption, this.baseOption);
   }
@@ -123,7 +167,7 @@ class LineChart {
    * _extent是一个数组，_extent[0]为该轴上最小值，_extent[1]为该轴上最大值
    */
   getYAxisMaxValue(echartsIns, index) {
-    return echartsIns.getModel().getComponent('yAxis', index)?.axis.scale._extent[1];
+    return echartsIns?.getModel?.()?.getComponent('yAxis', index)?.axis?.scale?._extent?.[1] || 1;
   }
 
   /**
@@ -133,7 +177,16 @@ class LineChart {
    * _extent是一个数组，_extent[0]为该轴上最小值，_extent[1]为该轴上最大值
    */
   getYAxisMinValue(echartsIns, index) {
-    return echartsIns.getModel().getComponent('yAxis', index)?.axis.scale._extent[0];
+    return echartsIns?.getModel?.()?.getComponent('yAxis', index)?.axis?.scale?._extent?.[0] || 0;
+  }
+
+  resize(callback) {
+    // 坐标轴二次计算
+    if (this.iChartOption.adaptive || this.iChartOption.legend?.svg) {
+      AdaptiveRectSys(this.baseOption, this.iChartOption, this.chartInstance, this)
+      this.baseOption.legend = legend(this.iChartOption, 'LineChart', this.chartInstance);
+      callback(this.baseOption, { notMerge: false });
+    }
   }
 }
 

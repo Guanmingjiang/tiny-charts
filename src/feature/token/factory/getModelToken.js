@@ -19,6 +19,7 @@ function getModelToken(aliasToken) {
     colorLabel,
     colorBgContainerSecondary,
     colorIcon,
+    colorIconActive,
     colorAxisLine,
     colorIconInactive,
     colorAxisTickLine,
@@ -49,6 +50,9 @@ function getModelToken(aliasToken) {
     legendItemSize,
     legendCircleItemSize,
     legendTextAndIconSpace, 
+    legendTextValueFontSize,
+    legendTextNameFontSize,
+    colorLegendItemHover,
     containerGap,
     lineWidthSecondary,
     borderWidthNone,
@@ -132,9 +136,9 @@ function getModelToken(aliasToken) {
     // 图例文本字号
     legendTextFontSize: subtextFontSize,
     // 图例富文本名称字号
-    legendTextNameFontSize: subtextFontSize,
+    legendTextNameFontSize: legendTextNameFontSize,
     // 图例富文本数值字号
-    legendTextValueFontSize: textFontSize,
+    legendTextValueFontSize: legendTextValueFontSize,
     // 图例文本的padding
     legendTextPadding: [containerGap - 1, 0, 0, legendTextAndIconSpace],
     // 图例每项之间的间隔
@@ -163,6 +167,8 @@ function getModelToken(aliasToken) {
     legendItemBorderWidth: borderWidthNone,
     // 图例的padding
     legendPadding: paddingNone,
+    // 图例下拉hover
+    legendDropDownItemHover: colorLegendItemHover,
 
     /** -----x轴------ */
     // x轴名称间距
@@ -338,6 +344,8 @@ function getModelToken(aliasToken) {
     tooltipItemGap: tipItemGap,
     // 默认tip的icon间距
     tooltipIconGap: tipIconGap,
+    // 默认tip的close颜色
+    tooltipCloseColor: colorIcon,
     // 默认ip的icon间距
     tooltipValueGap: tipValueGap,
     // 标题颜色

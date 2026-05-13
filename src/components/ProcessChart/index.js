@@ -15,9 +15,10 @@ import RectCoordSys from '../../option/RectSys';
 import { PROCESSBARTYPE, CHARTTYPENAME } from './BaseOption';
 import handleData from './handleData';
 import { handleGrid, handleYaxis, handleXaxis, handleDataZoom, handleLegend, handleTooltip } from './handleOption';
-import handleSeries from './handleSeries';
+import handleSeries, { setNameSeriesWidth } from './handleSeries';
 import cloneDeep from '../../util/cloneDeep';
 import { CHART_TYPE } from '../../util/constants';
+import { mergeSeries } from '../../util/merge';
 
 class ProcessChart {
 
@@ -41,10 +42,11 @@ class ProcessChart {
       throw new Error('ProcessChart must have a name');
     }
     // 加载默认的直角坐标系
-    RectCoordSys(this.baseOption, iChartOption, iChartOption.name);
+    RectCoordSys(this.baseOption, iChartOption, iChartOption.name, this.chartInstance);
     // 是否是基础双向进度图
     const doubleSide = iChartOption.name === CHARTTYPENAME.ProcessBarChart && iChartOption.type && iChartOption.type === PROCESSBARTYPE;
     const dataSet = handleData(iChartOption, doubleSide);
+    this.dataSet = dataSet;
     if (!dataSet) return;
 
     handleGrid(this.baseOption, iChartOption, doubleSide, this.chartInstance);
@@ -57,9 +59,11 @@ class ProcessChart {
 
     handleLegend(this.baseOption, dataSet, doubleSide, this.initIchartOption);
 
-    handleSeries(this.baseOption, iChartOption, dataSet, doubleSide);
+    handleSeries(this.baseOption, iChartOption, dataSet, doubleSide, this.chartInstance);
 
     handleTooltip(this.baseOption, iChartOption, dataSet, doubleSide);
+    // 合并用户自定义series
+    mergeSeries(iChartOption, this.baseOption);
     // 处理特性
     mini(iChartOption, this.baseOption);
   }
@@ -71,6 +75,19 @@ class ProcessChart {
   setOption(option) {
     this.baseOption = option;
   }
+
+  // 更新name的宽度
+  resize(callback){
+    let nameSeries;
+    this.baseOption.series.forEach(element => {
+        if(element.name === 'seriesName'){
+          nameSeries = element;
+        }
+    });
+    setNameSeriesWidth(nameSeries, this.dataSet, this.iChartOption, this.chartInstance);
+    callback(this.baseOption, { notMerge: false })
+  }
+
 }
 
 export default ProcessChart;

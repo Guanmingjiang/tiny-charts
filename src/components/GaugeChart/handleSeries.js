@@ -14,6 +14,7 @@ import cloneDeep from '../../util/cloneDeep';
 import chartToken from './chartToken';
 import Token from '../../feature/token';
 import merge from '../../util/merge';
+import { calculateFontSize } from '../../option/config/polarTitle/handleCenterTitle';
 
 export const emptySeriesUnit = {
   type: 'gauge',
@@ -78,7 +79,7 @@ export const seriesInit = {
   pointer: {
     show: false,
     icon: 'path://M4.49 10.21L0.1 1.44C-0.23 0.78 0.25 0 1 0L9.76 0C10.5 0 10.99 0.78 10.65 1.44C9.14 4.47 7.33 8.09 6.28 10.21C5.91 10.94 4.86 10.94 4.49 10.21Z',
-    length: '5%',
+    length: '12',
     width: 16,
     offsetCenter: [0, '-105%'],
   },
@@ -110,8 +111,8 @@ function handleSplitLine(iChartOption, seriesUnit) {
   if (iChartOption.itemStyle) {
     let { lineStyle, width } = iChartOption.itemStyle;
     width = width || chartToken.barWidth;
-    seriesUnit.splitLine.length = (lineStyle && lineStyle.length) || width || 10;
-    seriesUnit.splitLine.distance = width ? width * -1 : -3;
+    seriesUnit.splitLine.length = (lineStyle && lineStyle.length) || 7;
+    seriesUnit.splitLine.distance = (lineStyle && lineStyle.distance) || 0;
   } else {
     seriesUnit.splitLine.length = 7;
     seriesUnit.splitLine.distance = 0;
@@ -122,7 +123,7 @@ function handleSplitLine(iChartOption, seriesUnit) {
     } else {
       seriesUnit.splitLine.lineStyle.color = chartToken.splitLineColor;
     }
-    seriesUnit.splitLine.lineStyle.width = iChartOption.itemStyle.lineStyle.width || 4;
+    seriesUnit.splitLine.lineStyle.width = iChartOption.itemStyle.lineStyle.width || 2;
   }
 }
 
@@ -135,26 +136,36 @@ function handleTheme(iChartOption) {
 }
 
 // 配置仪表盘中心文本
-export function handleDetail(seriesUnit, text, data, sizeData) {
+export function handleDetail(seriesUnit, text, data, sizeData, isAdaptive) {
   seriesUnit.detail.formatter =
     text.formatter ||
     function (value) {
-      return `{value|${value}}\n{name|${data[0]?.name || ''}}`;
+      if(Number.isFinite(value)) {
+        return `{value|${value}}\n{name|${data[0]?.name || ''}}`;
+      } else {
+        return `{name|${data[0]?.name || ''}}`
+      }
+      
     };
+  const space = isAdaptive ? sizeData.space : 24;
+  const valuePadding = isAdaptive ? (sizeData.valuePadding || 0) : 0;
   seriesUnit.detail.offsetCenter = text.offset || [0, 0];
   seriesUnit.detail.rich = {
     value: {
-      fontSize: sizeData.NumSize,
+      fontSize: sizeData.mainFontSize,
       fontWeight: 'bolder',
       color: chartToken.detailRichColor,
+      padding: [valuePadding, 0, 0, 0],
     },
     name: {
-      fontSize: sizeData.subTitleSize,
+      fontSize: sizeData.secondaryFontSize || sizeData.subFontSize,
       color: chartToken.descRichColor,
-      padding: [24, 0, 0, 0],
+      padding: [space, 0, 0, 0],
+      fontWeight: 'normal',
     },
     unit: {
-      color: chartToken.detailRichColor
+      color: chartToken.detailRichColor,
+      fontSize: sizeData.secondaryFontSize || sizeData.subFontSize
     }
   };
   if (text?.formatterStyle) {
@@ -394,7 +405,7 @@ function setMarkLine(series, markLine, marklineColor) {
 }
 
 function handleOther(iChartOption, seriesUnit, series, data) {
-  const marklineColor = Token.config.colorState.colorError
+  const marklineColor = iChartOption.markLineColor ? iChartOption.markLineColor : Token.config.colorState.colorError; 
   if (iChartOption.splitColor && iChartOption.splitColor.length > 0) {
     setSplitColor(seriesUnit, iChartOption.splitColor, iChartOption.pointerStyle);
   } else if (iChartOption.gradientColor && iChartOption.gradientColor.length > 0) {
@@ -438,7 +449,7 @@ function handleOther(iChartOption, seriesUnit, series, data) {
   }
 }
 
-export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
+export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData,isAdaptive){
   let status = iChartOption.status;
   let statusText = iChartOption.statusText;
   let statusColor = {
@@ -449,13 +460,17 @@ export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
     warning: Token.config.colorAlarms.colorAlarmWarning,
     success: Token.config.colorState.colorSuccess
   }
-  
   let radius = seriesUnit.radius.toString().indexOf('%') == -1 ? seriesUnit.radius : radiusSize * parseFloat(seriesUnit.radius) / 100 / 2;
+  if(isAdaptive) {
+    radius = radiusSize;
+  }
+  const valuePadding = isAdaptive ? sizeData.valuePadding : 0;
   let lineHeight = radius / Math.sqrt(2) * 2 - 36;
-  
-  let numSize = sizeData.NumSize;
-  let unitPadding = lineHeight + 48 - (48 - numSize) / 2;
-  // let namePadding = lineHeight + 30 + (numSize - 48);
+  let mainFontSize = sizeData.mainFontSize;
+  let unitPadding = lineHeight + 48 - (48 - mainFontSize) / 2;
+  if(isAdaptive) {
+    unitPadding = unitPadding + valuePadding;
+  }
 
   let statusLabel = {
     fatal: '致命',
@@ -473,8 +488,8 @@ export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
   }
   seriesUnit.color = color;
 
-  let name = iChartOption.data[0].name;
-  let unit = iChartOption.unit;
+  let name = iChartOption.data?.[0]?.name || '';
+  let unit = iChartOption.unit || '';
   seriesUnit.detail = {
     valueAnimation: true,
     offsetCenter: [0, 0],
@@ -483,11 +498,11 @@ export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
     },
     rich: {
       value: {
-        fontSize: sizeData.NumSize,
+        fontSize: sizeData.mainFontSize,
         fontWeight: 'bolder',
         color: chartToken.detailRichColor,
-        padding: [lineHeight, 0, 0, 0],
-
+        padding: [lineHeight + valuePadding, 0, 0, 0],
+     
   
       },
       unit: {
@@ -496,10 +511,10 @@ export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
         padding: [unitPadding, 0, 30, 0],
       },
       name: {
-        fontSize: sizeData.subTitleSize,
+        fontSize: sizeData.secondaryFontSize || sizeData.subFontSize,
         color: chartToken.descRichColor,
         padding: [lineHeight + sizeData.space, 0, 0, 0],
-
+        fontWeight: 'normal',
       },
       status: {
         fontWeight: 'bolder',
@@ -523,26 +538,26 @@ export function handleStatus(seriesUnit, iChartOption,radiusSize,text,sizeData){
 export function handleSize(seriesUnit,radiusSize){
   
   let diameter = seriesUnit.radius.toString().indexOf('%') == -1 ? seriesUnit.radius * 2 : radiusSize * parseFloat(seriesUnit.radius) / 100;
-  let NumSize,subTitleSize,btnWidthSize,space;
+  let mainFontSize,secondaryFontSize,btnWidthSize,space;
   if(diameter >= 200) {
-    NumSize = 48;
-    subTitleSize = 14;
+    mainFontSize = 48;
+    secondaryFontSize = 14;
     btnWidthSize = 96;
     space = 28;
   } else if (diameter < 200 && diameter >= 160) {
-    NumSize = 36;
-    subTitleSize = 12;
+    mainFontSize = 36;
+    secondaryFontSize = 12;
     btnWidthSize = 80;
     space = 4;
   } else {
-    NumSize = 32;
-    subTitleSize = 12;
+    mainFontSize = 32;
+    secondaryFontSize = 12;
     btnWidthSize = 64;
     space = 0;
   }
   return {
-    NumSize: NumSize,
-    subTitleSize: subTitleSize,
+    mainFontSize: mainFontSize,
+    secondaryFontSize: secondaryFontSize,
     btnWidthSize: btnWidthSize,
     space: space,
   }
@@ -551,12 +566,12 @@ export function handleSize(seriesUnit,radiusSize){
 function setSeriesInit(seriesUnit, iChartOption) {
   const chartPosition = iChartOption.position || iChartOption.chartPosition || {};
   const { pointerStyle, pointer, min, max, startAngle, endAngle } = iChartOption;
-  seriesUnit.name = iChartOption.seriesName || iChartOption.name;
+  seriesUnit.name = iChartOption.seriesName || iChartOption.name || 'data';
   seriesUnit.data = iChartOption.data.length ? iChartOption.data : [{value:0,name: ''}];
   // 指针
   seriesUnit.pointer.show = pointer || false;
-  seriesUnit.pointer.width = (pointerStyle && pointerStyle.width) || 16;
-  seriesUnit.pointer.length = (pointerStyle && pointerStyle.length) || '5%';
+  seriesUnit.pointer.width = (pointerStyle && pointerStyle.width) || 12;
+  seriesUnit.pointer.length = (pointerStyle && pointerStyle.length) || 16;
   seriesUnit.pointer.offsetCenter[1] = (pointerStyle && pointerStyle.pointerDistance) || '-108%';
   seriesUnit.pointer.lineDistance = (pointerStyle && pointerStyle.lineDistance) || '5%';
   // 位置
@@ -579,11 +594,12 @@ function setSeriesInit(seriesUnit, iChartOption) {
  * @param {数据} data
  * @returns
  */
-export function handleSeries(iChartOption,optionColor,containerWidth,containerHeight) {
+export function handleSeries(iChartOption, optionColor, containerWidth, containerHeight) {
   const data = iChartOption.data.length ? iChartOption.data : [{value:0,name: ''}];
   const text = iChartOption.text || {};
   const axisLabelStyle = iChartOption.axisLabelStyle || {};
-  const { silent } = iChartOption;
+  const { silent, itemStyle } = iChartOption;
+  const barWidth = chartToken.barWidth;
   const radiusSize = containerWidth > containerHeight ? containerHeight : containerWidth;
   // 更改仪表盘轨道底色
   handleTheme(iChartOption);
@@ -593,7 +609,7 @@ export function handleSeries(iChartOption,optionColor,containerWidth,containerHe
   } else {
     seriesInit.axisLabel['color'] = chartToken.descRichColor;
   }
-  seriesInit.axisLabel['distance'] = axisLabelStyle['distance'] || 22;
+  seriesInit.axisLabel['distance'] = axisLabelStyle['distance'] || Number(itemStyle?.width || barWidth) + 6 || 22;
   seriesInit.axisLabel['fontWeight'] = axisLabelStyle['fontWeight'] || 400;
   seriesInit.axisLabel['fontSize'] = axisLabelStyle['fontSize'] || 14;
   // 组装数据
@@ -606,7 +622,7 @@ export function handleSeries(iChartOption,optionColor,containerWidth,containerHe
   // 不同尺寸下的fontSize
   const sizeData = handleSize(seriesUnit,radiusSize);
   // 中间文本
-  handleDetail(seriesUnit, text, data,sizeData);
+  handleDetail(seriesUnit, text, data, sizeData, iChartOption.adaptive);
   // 进度条宽度
   handleProgress(seriesUnit, iChartOption, data);
   handleAxisLine(seriesUnit, iChartOption);
@@ -619,5 +635,61 @@ export function handleSeries(iChartOption,optionColor,containerWidth,containerHe
   series[0].silent = silent || false;
   return series;
 }
+
+export function adapt(iChartOption, baseOption, containerWidth, containerHeight) {
+  const theme = iChartOption?.theme;
+  const adaptive =  iChartOption?.adaptive;
+  const series = baseOption.series[0];
+  const text = iChartOption.text || {};
+  // 如果主题为华为云主题，并且开启配置项则开启自适应功能
+  if (theme && theme.indexOf('cloud')!=-1 && adaptive) {
+    // 初始值为宽度的80%
+    let initRadius = containerWidth * 0.8;
+    let radius = Math.max(120,Math.min(200,Math.min(initRadius,containerHeight))) / 2;
+    let mainText;
+    const value = iChartOption?.data[0]?.value;
+    const unit = iChartOption?.unit;
+    if (value && unit) {
+      mainText = [value,unit];
+    } else {
+      mainText = value && value.toString();
+    }
+    const barWidth = baseOption.series[0]?.progress?.width;
+    let sizeData = calculateFontSize(radius * 2,mainText,barWidth);
+    
+    // 主文本的上padding
+    if(sizeData.mainFontSize === 48) {
+      sizeData.valuePadding = 0;
+    } else if (sizeData.mainFontSize === 36) {
+      sizeData.valuePadding = 8;
+    } else {
+      sizeData.valuePadding = 16;
+    }
+  
+    baseOption.series[0].axisLabel.show = false;
+    baseOption.series[0].splitLine.show = false;
+    // 非内置仪表盘 中间文本 主副文本的间距按需决定
+    if(radius*2 >= 200) {
+      sizeData.space = 24;
+    } else if (radius*2 < 200 && radius*2 >= 160) {
+      sizeData.space = 18;
+    } else {
+      sizeData.space = 10;
+    }
+    handleDetail(series, text, iChartOption.data, sizeData, true);
+    // 内置状态仪表盘 space沿用默认规则
+    if(radius*2 >= 200) {
+      sizeData.space = 28;
+    } else if (radius*2 < 200 && radius*2 >= 160) {
+      sizeData.space = 4;
+    } else {
+      sizeData.space = 0;
+    }
+    handleStatus(series, iChartOption, radius, text, sizeData, true);
+    baseOption.series[0].radius = radius;
+  }
+}
+
+
 
 

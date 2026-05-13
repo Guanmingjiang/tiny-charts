@@ -33,7 +33,7 @@ function getSceneToken(globalToken, light = true) {
         // datazoom  handle border
         colorBgHandle: light ? colorGray0 : colorGray70,
         // 仪表盘中心文本卡片
-        colorBgActive: light ? colorGray5 : colorGray10,
+        colorBgActive: light ? colorGray5 : codeToRGB(colorGray0, 0.1),
         // 主要文本色
         colorTextPrimary: light ? colorGray90 : colorGray5,
         // 次要文本色
@@ -44,6 +44,8 @@ function getSceneToken(globalToken, light = true) {
         colorTextDisabled: light ? codeToRGB(colorGray90, 0.3) : codeToRGB(colorGray10, 0.3),
         // 图标色
         colorIconPrimary: light ? colorGray90 : colorGray10,
+        // 图标激活色
+        colorIconActive: colorGray90,
         // 图标禁用色
         colorIconDisabled: light ? codeToRGB(colorGray90, 0.3) : codeToRGB(colorGray10, 0.3),
         colorLine: light ? colorGray10 : codeToRGB(colorGray10, 0.1),

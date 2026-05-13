@@ -14,6 +14,7 @@ import merge from '../../util/merge';
 import { isString, isArray } from '../../util/type';
 import { getBarColor } from './handleSeries';
 import getTooltipContentHtmlStr, { getDataHtmlStr } from '../../option/config/tooltip/formatter'
+import mobile from '../../util/mobile';
 
 function handleGridWidth(baseOpt, padding, chartInstance) {
   const right = padding[1];
@@ -168,7 +169,7 @@ function handleStackTipFormatter(baseOpt, iChartOpt) {
     baseOpt.tooltip.formatter = tipHtml;
     return;
   }
-  baseOpt.tooltip.formatter = params => {
+  baseOpt.tooltip.formatter = (params, ticket, callback) => {
     const name = params[0].name
     if (name === 'null') return
     const config = {
@@ -188,7 +189,10 @@ function handleStackTipFormatter(baseOpt, iChartOpt) {
         config.children.push(dataItem)
       }
     });
-    return getTooltipContentHtmlStr(config)
+    const isMobile = iChartOpt.isMobile ||mobile();
+    const isCloud = iChartOpt.theme?.includes('cloud');
+    config.isMobile = iChartOpt.adaptive && isCloud && isMobile;
+    return getTooltipContentHtmlStr(config, baseOpt.tooltip)
   };
 }
 

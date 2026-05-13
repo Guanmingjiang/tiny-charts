@@ -27,6 +27,7 @@ import { event } from './util/event'
 import cloneDeep from './util/cloneDeep';
 import { uuid } from './util/math';
 import Theme from './theme';
+import mobile from './util/mobile';
 
 const SELF_CHART = [
   'FlowChart',
@@ -46,7 +47,8 @@ const SELF_CHART = [
   'CircleChart',
   'LinearArcChart',
   'CircleArcChart',
-  'CustomizeChart'
+  'CustomizeChart',
+  'RankProcessChart',
 ];
 
 // 图表核心对象，按需引入图表 class 给 CoreChart 渲染，打包容量较小
@@ -128,6 +130,7 @@ export default class CoreChart extends BaseChart {
     };
     initOpts = merge(defaultInit, initOpts);
     this.dom = chartDom;
+    this.dom.classList.add('hui-charts-instance');
     this.echartsIns = echarts.init(chartDom, theme, initOpts);
     // resize节流函数
     this.throttleResize = initOpts.resizeThrottle === 0 ? this.setResize.bind(this) : throttle(initOpts.resizeThrottle, this.setResize.bind(this));
@@ -150,8 +153,8 @@ export default class CoreChart extends BaseChart {
   setResize() {
     this.mediaScreenObserver && this.mediaScreenObserver.observe();
     this.echartsIns && this.echartsIns._dom && this.echartsIns.resize && this.echartsIns.resize({ width: 'auto' });
-    this.echartsIns && this.echartsIns._dom && this.ichartsIns && this.ichartsIns.resize && this.ichartsIns.resize((resizedOption) => {
-      this.setOption(resizedOption);
+    this.echartsIns && this.echartsIns._dom && this.ichartsIns && this.ichartsIns.resize && this.ichartsIns.resize((resizedOption, option = { notMerge: true } ) => {
+      this.setOption(resizedOption, option);
     });
   }
 
@@ -168,6 +171,13 @@ export default class CoreChart extends BaseChart {
     // 添加读屏能力
     if (iChartOption.readScreen) {
       readScreen(this.dom, iChartOption.readScreen);
+    }
+    // 增加移动端类名
+    this.isMobile = iChartOption.isMobile || mobile();
+    if (this.isMobile) this.dom.classList.add('mobile');
+    // 使用图例扩展或svg图例时屏蔽默认图例
+    if (iChartOption?.legend?.upgrade?.type !== undefined || iChartOption?.legend?.svg){
+      iChartOption.legend.show = false;
     }
     // 如果是复杂图表，则重定向this指向
     if (this.isSelfChart(ChartClass)) {

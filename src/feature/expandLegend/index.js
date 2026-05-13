@@ -42,14 +42,17 @@ function expandLegend(chartsIns) {
             createSingleSelectLegend(chartsIns);
             break;
     }
-    chartsIns.setOption(option);
 }
 
 function createMutiSelect(chartsIns) {
-    const { dom: dom, eChartOption: option } = chartsIns;
+    const { dom: dom, eChartOption: option, iChartOption } = chartsIns;
     const { width } = option.legend.upgrade;
     const container = document.createElement("div");
     container.classList.add(CSS_CLASS.CONTAINER);
+    if (iChartOption?.theme.includes('cloud')) {
+        container.classList.add('cloud');
+        container.classList.add(iChartOption.theme);
+    }
     const legendBar = document.createElement("div");
     legendBar.classList.add(CSS_CLASS.MUTISELECT_CONTAINER);
     if (width && typeof width === "string") {
@@ -61,6 +64,7 @@ function createMutiSelect(chartsIns) {
     let data = option?.legend?.data;
     if (data === undefined) data = option?.series[0]?.data;
     mutiSelect.setOption({
+        theme: iChartOption.theme || '',
         data: [...data],
         color: [...option.color],
         itemStyle: option.legend.upgrade.itemStyle,
@@ -79,9 +83,12 @@ function createMutiSelect(chartsIns) {
 }
 
 function createList(chartsIns) {
-    const { dom: dom, eChartOption: option } = chartsIns;
+    const { dom: dom, eChartOption: option, iChartOption } = chartsIns;
     const container = document.createElement("div");
     container.classList.add(CSS_CLASS.LIST_CONTAINER);
+    if (iChartOption?.theme.includes('cloud')) {
+        container.classList.add('cloud')
+    }
     if (option?.legend?.upgrade?.position === "underCanvas") {
         dom.insertAdjacentHTML("beforeend", container.outerHTML);
         dom.parentNode.querySelector(`.${CSS_CLASS.LIST_CONTAINER}`).style.width = "100%"
@@ -111,6 +118,7 @@ function createList(chartsIns) {
         data = option?.series[0]?.data;
     }
     list.setOption({
+        theme: iChartOption.theme || '',
         data: [...data],
         itemStyle: option.legend.upgrade.itemStyle,
         color: [...option.color],
@@ -142,6 +150,7 @@ function createSingleSelect(chartsIns) {
     let data = option?.legend?.data;
     if (data === undefined) data = option?.series[0]?.data;
     select.setOption({
+        theme: iChartOption.theme || '',
         color: [...option.color],
         data: [...data],
         itemStyle: option.legend.upgrade.itemStyle,
@@ -155,10 +164,13 @@ function createSingleSelect(chartsIns) {
 }
 
 function createSingleSelectLegend(chartsIns){
-    const { dom: dom, eChartOption: option } = chartsIns;
+    const { dom: dom, eChartOption: option, iChartOption } = chartsIns;
     const { width } = option.legend.upgrade;
     const container = document.createElement("div");
     container.classList.add(CSS_CLASS.CONTAINER);
+    if (iChartOption?.theme.includes('cloud')) {
+        container.classList.add('cloud')
+    }
     const legendBar = document.createElement("div");
     legendBar.classList.add(CSS_CLASS.SINGLESELECT_CONTAINER);
     if (width && typeof width === "string") {
@@ -170,6 +182,7 @@ function createSingleSelectLegend(chartsIns){
     let data = option?.legend?.data;
     if (data === undefined) data = option?.series[0]?.data;
     singleSelect.setOption({
+        theme: iChartOption.theme || '',
         data: [...data],
         color: [...option.color],
         itemStyle: option.legend.upgrade.itemStyle,

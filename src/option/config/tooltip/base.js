@@ -10,6 +10,7 @@
  *
  */
 import Token from '../../../feature/token';
+import mobile from '../../../util/mobile';
 
 const chartType = [
   'CircleProcessChart',
@@ -27,12 +28,22 @@ const chartType = [
   'AssembleBubbleChart'
 ];
 
-function base(chartName) {
+function base(chartName, iChartOption) {
   const trigger = chartName && chartType.includes(chartName) ? 'item' : 'axis';
+  const isMobile = iChartOption.isMobile || mobile();
+  const isCloud = iChartOption.theme?.includes('cloud');
+  const isMobileShowTipChart = ['LineChart', 'AreaChart', 'BarChart', 'RadarChart'];
+  const isCloudAdaptiveMobile = iChartOption.adaptive && isMobile && isCloud;
+  let className = isCloudAdaptiveMobile ? 'hui-charts-tooltip-container mobile' : 'hui-charts-tooltip-container';
+  if (isCloudAdaptiveMobile && !isMobileShowTipChart.includes(chartName)) {
+    className += ' hide'
+  }
   return {
     trigger,
+    triggerOn: isMobile ? 'click' : 'mousemove',
     confine: true,
     borderRadius: Token.config.tooltipBorderRaduis,
+    className,
     axisPointer: {
       z: 0,
       type: 'line',
